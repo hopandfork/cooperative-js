@@ -1,0 +1,22 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "Server to enable distributed computing over web browser",
+  "main": "./src/server.js",
+  "dependencies": {
+    "client": "../client",
+    "serialize-javascript": "^1.4.0",
+    "websocketserver": "1.0.0"
+  },
+  "scripts": {
+    "build": "babel src --presets babel-preset-es2015 --out-dir distribution",
+    "test": "test",
+    "start": "npm run build && node ./distribution/server.js"
+  },
+  "author": "Luca Fulgieri",
+  "license": "GPL-2.0",
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-es2015": "^6.24.1"
+  }
+}
