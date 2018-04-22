@@ -65,6 +65,9 @@ server.on('closedconnection', (id) => {
     console.log("Connection " + id + " closed");
     for (var j in workers) {
 	if (workers[j].id == id) {
+	    for (var k in workers[j].jobs) {	
+		server.sendMessage("one", MessageSerializer.serialize(new Message(MessageType.ERROR, workers[j].jobs[k])), workers[j].submitterIds[k]); 
+	    }
 	    workers.splice(j, 1);
 	}
     }

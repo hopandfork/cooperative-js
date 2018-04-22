@@ -1,5 +1,6 @@
 .DS_Store
-client/dist
+client/distribution
 client/node_modules
 server/node_modules
+server/distribution
 example/node_modules

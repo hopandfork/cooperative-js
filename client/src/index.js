@@ -42,6 +42,13 @@ class Client {
 	    this.workersCallback(workers);
 	    this.workersCallback = null;
 	}
+	
+	if (message.type === MessageType.ERROR) {
+	    const job = message.content;
+	    var jobs = [];
+	    jobs.push(job);
+	    this.ws.send(MessageSerializer.serialize(new Message(MessageType.TASK, jobs)));
+	}
     }
 
     send(task, mergeFunction) {
