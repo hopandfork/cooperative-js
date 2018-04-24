@@ -4,8 +4,8 @@ npm run build
 cd ../server
 rm -r node_modules/client
 npm install
-cd ../example
+cd ../example/wordcount
 rm -r node_modules/client
 npm install
-cd ..
+cd ../..
 echo 'Ends build'
