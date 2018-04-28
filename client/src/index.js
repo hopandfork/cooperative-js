@@ -3,19 +3,51 @@ var serialize = require('serialize-javascript');
 class Client {
     
     constructor(ip, port) {
-	this.ws = new WebSocket("ws://" + ip + ":" + port);
+	this.ip = ip;
+	this.port = port;
 	
 	this.workersCallback = null;
 	this.mergeFunction = null;
 	this.task = [];
 	
+	this.getIp = this.getIp.bind(this);
+	this.getPort = this.getPort.bind(this);
+	this.getRemainingJobs = this.getRemainingJobs.bind(this);
 	this.isBusy = this.isBusy.bind(this);
 	this.isConnected = this.isConnected.bind(this);
 	this.send = this.send.bind(this);
+	this.setOnCloseListener = this.setOnCloseListener.bind(this);
 	this.handleMessage = this.handleMessage.bind(this);
 	this.getCurrentWorkers = this.getCurrentWorkers.bind(this);
-	
+		
+	this.ws = new WebSocket("ws://" + ip + ":" + port);
 	this.ws.addEventListener("message", this.handleMessage);	
+    }
+    
+    getCurrentWorkers(workersCallback) {
+	if (!this.isConnected()) {
+	    throw 'the client isn\'t connected';
+	}
+
+	if (typeof workersCallback !== 'function') {
+	    throw 'workersCallback has to be a function';
+	}
+	this.workersCallback = workersCallback;
+
+        const message = new Message(MessageType.WORKERS, null);
+	this.ws.send(MessageSerializer.serialize(message));
+    }
+
+    getIp() {
+	return this.ip;
+    }
+    
+    getPort() {
+	return this.port;
+    }
+    
+    getRemainingJobs() {
+	return this.task;
     }
 
     handleMessage(message) {
@@ -50,7 +82,21 @@ class Client {
 	    this.ws.send(MessageSerializer.serialize(new Message(MessageType.TASK, jobs)));
 	}
     }
-
+ 
+    isConnected() {
+	if (this.ws.readyState === this.ws.OPEN) {
+	    return true;
+	}
+	return false;
+    }
+    
+    isBusy() {
+	if (this.task.length === 0) {
+	    return false;
+	}
+	return true;
+    }
+    
     send(task, mergeFunction) {
 	if (!this.isConnected()) {
 	    throw 'the client isn\'t connected';
@@ -73,33 +119,13 @@ class Client {
         const message = new Message(MessageType.TASK, task);
 	this.ws.send(MessageSerializer.serialize(message));
     }
-    
-    isConnected() {
-	if (this.ws.readyState === this.ws.OPEN) {
-	    return true;
-	}
-	return false;
-    }
-    
-    isBusy() {
-	if (this.task.length === 0) {
-	    return false;
-	}
-	return true;
-    }
 
-    getCurrentWorkers(workersCallback) {
-	if (!this.isConnected()) {
-	    throw 'the client isn\'t connected';
+    setOnCloseListener(onCloseListener) {
+	if (typeof onCloseListener === 'function') {
+	    this.ws.addEventListener("close", onCloseListener);	
+	} else {
+	    throw 'onCloseListener has to be a function';
 	}
-
-	if (typeof workersCallback !== 'function') {
-	    throw 'workersCallback has to be a function';
-	}
-	this.workersCallback = workersCallback;
-
-        const message = new Message(MessageType.WORKERS, null);
-	this.ws.send(MessageSerializer.serialize(message));
     }
 }    
 

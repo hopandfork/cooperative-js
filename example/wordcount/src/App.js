@@ -43,7 +43,11 @@ class App extends Component {
 
     updateWorkers() {
 	if(this.client !== null) {
-	    this.client.getCurrentWorkers(this.updateWorkersState);
+	    try {
+		this.client.getCurrentWorkers(this.updateWorkersState);
+	    } catch(err) {
+		console.log(err);
+	    }
 	}
     }
 
@@ -77,12 +81,16 @@ class App extends Component {
 	try {   
 	    this.client.send(task, this.mergeFunction);
 	} catch (err) {
-	    console.log("wait");
+	    console.log(err);
 	}
     }
 
 componentDidMount() {
     this.client = new Client("localhost", "9000");    
+    this.client.setOnCloseListener(() => {
+        console.log("closed");
+        console.log(this.client.getRemainingJobs());
+    });
 }
 
 render() {
