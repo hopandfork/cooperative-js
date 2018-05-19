@@ -4,3 +4,4 @@ client/node_modules
 server/node_modules
 server/distribution
 example/node_modules
+npm-debug.log

@@ -4,7 +4,7 @@ npm run build
 cd ../server
 rm -r node_modules/client
 npm install
-cd ../example/wordcount
+cd ../examples/wordcount
 rm -r node_modules/client
 npm install
 cd ../..
