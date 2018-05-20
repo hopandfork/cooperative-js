@@ -35,10 +35,11 @@ server.on('connection', (ws, req) => {
     
     idCounter++;
 
+    console.log("Connection " + ws.id + " opened");
+
     ws.on('message', (data) => {
 	const id = ws.id;
 	
-        console.log("id=" + id);
         const message = MessageDeserializer.deserialize(data);
         
         console.log(message);
@@ -50,7 +51,9 @@ server.on('connection', (ws, req) => {
 		try {
 		    for (var i in task) {
 			job = task[i];
-    		
+			
+			/* The Scheduler has to pay attention to the jobs assigned to a Worker, now job with
+			 * same id and different submitter aren't allowed on the same worker */
 			var choosedWorker = SimpleScheduler.schedule(job, workers, submitter[0]);
     		
 			choosedWorker.state = WorkerState.BUSY;
@@ -66,22 +69,26 @@ server.on('connection', (ws, req) => {
             break;
             case MessageType.END:
     	    const jobResult = message.content;
-                console.log("Worker " + id + " has finished " + jobResult.jobId)
-    
                 for (var j in workers) {
-    		var jobSolved = workers[j].jobs.filter(function (job) {return job.id === jobResult.jobId});
-            	if (workers[j].id === id) {
-    		    var jobIndex = workers[j].jobs.indexOf(jobSolved[0]);
-		    
-		    var wsSubmitter = wsToId.filter((temp) => {return temp.id === workers[j].submitterIds[jobIndex];});
-        	    wsSubmitter[0].send(MessageSerializer.serialize(message));
+            	  if (workers[j].id === id) {
+		      var jobsSolved = workers[j].jobs.filter(function (job) {return job.id === jobResult.jobId});
+    		      
+		      for (var k in jobsSolved) {
+			  var jobIndex = workers[j].jobs.indexOf(jobsSolved[k]);
+			  //TODO checks for a Job with same id and different submitter
+			  //if (workers[j].submitterIds[jobIndex] === ) {
+		      	      
+		      	      var wsSubmitter = wsToId.filter((temp) => {return temp.id === workers[j].submitterIds[jobIndex];});
+        	      	      wsSubmitter[0].send(MessageSerializer.serialize(message));
 
-        	    workers[j].jobs.splice(jobIndex, 1);
-        	    workers[j].submitterIds.splice(jobIndex, 1);
-    		    if (workers[j].jobs.length === 0) {
-    			workers[j].state = WorkerState.FREE;
-    		    }
-            	}
+        	      	      workers[j].jobs.splice(jobIndex, 1);
+        	      	      workers[j].submitterIds.splice(jobIndex, 1);
+    		      	      if (workers[j].jobs.length === 0) {
+    		      	        workers[j].state = WorkerState.FREE;
+    		      	      }
+			  //}
+		      }
+            	  }
                 }
             break;
             case MessageType.WORKERS: 
@@ -92,8 +99,6 @@ server.on('connection', (ws, req) => {
     });
 
     ws.on('close', () => {
-        console.log(workers);
-        console.log(wsToId);
 	const id = ws.id;
 
         console.log("Connection " + id + " closed");
@@ -107,7 +112,5 @@ server.on('connection', (ws, req) => {
 	    wsToId.splice(wsToId.indexOf(ws), 1);
     	}
         }
-        console.log(workers);
-        console.log(wsToId);
     });
 });
