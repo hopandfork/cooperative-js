@@ -1,13 +1,12 @@
 class Worker {
-    constructor(id, state, jobs, submitterIds) {   
-	if (!Array.isArray(jobs) || !Array.isArray(submitterIds)) {
-	    throw 'jobs and submittersIds have to be arrays';
+    constructor(id, state, jobs) {   
+	if (!Array.isArray(jobs)) {
+	    throw 'jobs has to be an array';
 	}
 
 	this.id = id;
 	this.state = state;
 	this.jobs = jobs;
-	this.submitterIds = submitterIds;
     }
 }
 

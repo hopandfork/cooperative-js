@@ -28,15 +28,17 @@ var workers = [];
 var wsToId = [];
 var idCounter = 0;
 
+/* Allows to assign an id to the WebSocket connection */
 server.on('connection', (ws, req) => {
     ws.id = idCounter;
     wsToId.push(ws);
-    workers.push(new Worker(idCounter, "FREE", [], []));
+    workers.push(new Worker(idCounter, "FREE", []));
     
     idCounter++;
 
     console.log("Connection " + ws.id + " opened");
 
+    /* Allows to handle each incoming message */
     ws.on('message', (data) => {
 	const id = ws.id;
 	
@@ -52,13 +54,12 @@ server.on('connection', (ws, req) => {
 		    for (var i in task) {
 			job = task[i];
 			
-			/* The Scheduler has to pay attention to the jobs assigned to a Worker, now job with
-			 * same id and different submitter aren't allowed on the same worker */
+			/* The scheduler allows to find a Worker for the job execution */
 			var choosedWorker = SimpleScheduler.schedule(job, workers, submitter[0]);
     		
 			choosedWorker.state = WorkerState.BUSY;
+			job.submitterId = id;
 			choosedWorker.jobs.push(job);
-			choosedWorker.submitterIds.push(id);
     
 			var wsChoosed = wsToId.filter((temp) => {return temp.id === choosedWorker.id;});
 			wsChoosed[0].send(MessageSerializer.serialize(new Message(MessageType.JOB, job)));	
@@ -70,26 +71,20 @@ server.on('connection', (ws, req) => {
             case MessageType.END:
     	    const jobResult = message.content;
                 for (var j in workers) {
-            	  if (workers[j].id === id) {
-		      var jobsSolved = workers[j].jobs.filter(function (job) {return job.id === jobResult.jobId});
+		    if (workers[j].id === id) {
+			var jobSolved = workers[j].jobs.filter((job) => {return (job.id === jobResult.jobId) && (job.submitterId === jobResult.submitterId);});
     		      
-		      for (var k in jobsSolved) {
-			  var jobIndex = workers[j].jobs.indexOf(jobsSolved[k]);
-			  //TODO checks for a Job with same id and different submitter
-			  //if (workers[j].submitterIds[jobIndex] === ) {
+			var jobIndex = workers[j].jobs.indexOf(jobSolved[0]);
 		      	      
-		      	      var wsSubmitter = wsToId.filter((temp) => {return temp.id === workers[j].submitterIds[jobIndex];});
-        	      	      wsSubmitter[0].send(MessageSerializer.serialize(message));
+			var wsSubmitter = wsToId.filter((temp) => {return temp.id === jobResult.submitterId;});
+			wsSubmitter[0].send(MessageSerializer.serialize(message));
 
-        	      	      workers[j].jobs.splice(jobIndex, 1);
-        	      	      workers[j].submitterIds.splice(jobIndex, 1);
-    		      	      if (workers[j].jobs.length === 0) {
-    		      	        workers[j].state = WorkerState.FREE;
-    		      	      }
-			  //}
-		      }
-            	  }
-                }
+			workers[j].jobs.splice(jobIndex, 1);
+    		      	if (workers[j].jobs.length === 0) {
+    		      	    workers[j].state = WorkerState.FREE;
+    		      	}
+		    }
+		}
             break;
             case MessageType.WORKERS: 
 		ws.send(MessageSerializer.serialize(new Message(MessageType.WORKERS, workers)));
@@ -98,6 +93,9 @@ server.on('connection', (ws, req) => {
         }
     });
 
+    /* This event handler allows to notify an error to the submitters beacouse of a Worker problem.
+     * Now the submitter resubmit the Job.
+     */
     ws.on('close', () => {
 	const id = ws.id;
 
@@ -105,7 +103,7 @@ server.on('connection', (ws, req) => {
         for (var j in workers) {
     	if (workers[j].id == id) {
     	    for (var k in workers[j].jobs) {
-		var wsSubmitter = wsToId.filter((temp) => {return temp.id === workers[j].submitterIds[k];});
+		var wsSubmitter = wsToId.filter((temp) => {return temp.id === workers[j].jobs[k].submitterId;});
     		wsSubmitter[0].send(MessageSerializer.serialize(new Message(MessageType.ERROR, workers[j].jobs[k]))); 
     	    }
     	    workers.splice(j, 1);

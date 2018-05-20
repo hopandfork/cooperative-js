@@ -55,7 +55,7 @@ class Client {
 	console.log(message);	
 	if (message.type === MessageType.JOB) {
 	    const job = message.content;
-	    const content = new JobResult(job.id, job.code(job.data));
+	    const content = new JobResult(job.id, job.code(job.data), job.submitterId);
 	    this.ws.send(MessageSerializer.serialize(new Message(MessageType.END, content)));
 	}
 	
@@ -134,13 +134,15 @@ class Job {
 	this.id = id;
 	this.data = data;
 	this.code = code;
+	this.submitterId = null;
     }
 }    
 
 class JobResult {
-    constructor(jobId, result) {
+    constructor(jobId, result, submitterId) {
 	this.jobId = jobId;
 	this.result = result;
+	this.submitterId = submitterId;
     }
 }
 
