@@ -1,5 +1,5 @@
 # CooperativeJS #
-This simple project allows to connect WebBrowser running apps using the *client* and the NodeJS *server* based on WebSocket protocol. 
+This simple project allows to connect Web Browsers running apps using the *client* and the NodeJS *server* based on WebSocket protocol. 
 In the *examples* directory you can find a simple distributed Wordcount application.
 
 # Requirements #
